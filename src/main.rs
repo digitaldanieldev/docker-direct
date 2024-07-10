@@ -185,12 +185,19 @@ async fn list_containers_info() -> Result<Vec<Container>, Box<dyn std::error::Er
 fn read_file_once(filename: &str) -> Vec<String> {
     let span = span!(Level::INFO, "read_file");
     let _guard = span.enter();
-    tracing::info!("Reading file from disk");
-    read_to_string(filename)
-        .unwrap()
-        .lines()
-        .map(|line| line.to_string())
-        .collect()
+    tracing::info!("Checking if file exists: {}", filename);
+    
+    if std::fs::metadata(filename).is_ok() {
+        tracing::info!("File exists, reading file from disk");
+        read_to_string(filename)
+            .unwrap()
+            .lines()
+            .map(|line| line.to_string())
+            .collect()
+    } else {
+        tracing::warn!("File does not exist: {}", filename);
+        Vec::new()
+    }
 }
 
 #[derive(Clone, Debug, Serialize, Template)]

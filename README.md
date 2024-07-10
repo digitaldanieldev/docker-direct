@@ -5,14 +5,18 @@ Docker-direct is a simple tool designed for managing Docker containers based on 
 I created Docker-direct to simplify the management of Docker containers, enabling my kids to start and stop their Minecraft servers without needing complex tools like Portainer.
 
 ## Usage:
-Download the binary found in the repository under 'releases'. Create a file called containers.txt and specify the containers by name on separate lines.
+Download the binary found in the repository under 'releases'. 
+
+Create a file called containers.txt and specify the containers by name on separate lines.
 
 `docker-direct [OPTIONS]`
-`docker-direct -a listofminecraftservers -p 1235 `
+`docker-direct -a listofminecraftservers -p 1235`
 
 Run Docker-direct on your server that hosts Docker containers.
 
 Access Docker-direct via ip:port/containers in your web browser.
+
+Something doesn't work as expected? Check docker-direct.log
 
 ### Options:
 
