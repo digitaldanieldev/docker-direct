@@ -1,22 +1,27 @@
 # Docker-direct
-
 Docker-direct is a simple tool that allows people to start and stop docker containers based on a simple allow-list. Docker-direct compares the containers that are hosted on the system with the containers listed in containers.txt and only allows users to directly control those docker containers.
 
+## Why?
 I built this so my kids can start and stop their own Minecraft servers without having to use tool like Portainer
 
-Usage: docker-direct [OPTIONS]
+## Usage:
+`docker-direct [OPTIONS]`
+`docker-direct -f listofminecraftservers -p 1235`
 
-Options:
+### Options:
 
--f --filename   Set the file that contains the list of allowed containers. 
-                Defaults to containers.txt.
+**-f** --filename   Set the file that contains the list of allowed containers. <em>Default: containers.txt.</em>
 
--p --port       Set the port on which docker-direct should be accessible. 
-                Defaults to 1234
+The container names should be on seperate lines without any separators
+`container-name-one`
+	
+	
 
--h --help       Print help
+**-p** --port       Set the port on which docker-direct should be accessible. <em>Default: 1234</em>
 
--v --version    Print version
+**-h** --help       Print help
+
+**-v** --version    Print version
 
 
 # assumption
