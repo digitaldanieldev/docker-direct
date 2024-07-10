@@ -1,47 +1,49 @@
 # Docker-direct
-Docker-direct is a simple tool that allows the starting and stopping docker containers based on an allow-list. Docker-direct compares the containers that are hosted on the system with the containers listed in containers.txt and only allows users to directly control those docker containers.
+Docker-direct is a simple tool designed for managing Docker containers based on an allow-list. It allows users to start and stop only those containers listed in containers.txt.
 
 ## Why?
-I built this so my kids can start and stop their own Minecraft servers without having to use tools like Portainer.
+I created Docker-direct to simplify the management of Docker containers, enabling my kids to start and stop their Minecraft servers without needing complex tools like Portainer.
 
 ## Usage:
 `docker-direct [OPTIONS]`
 `docker-direct -f listofminecraftservers -p 1235`
 
-Rdun docker-direct on the server that hosts your docker containers.
+Run Docker-direct on your server that hosts Docker containers.
 
-Access docker-direct using `ip:port/containers` in your browser.
+Access Docker-direct via ip:port/containers in your web browser.
 
 ### Options:
 
-**-a** --allowed   Set the file that contains the list of allowed containers. The container names should be on seperate lines without any separators. <em>Default: containers.txt.</em>
+**-a --allowed**   Specify the file containing the list of allowed containers. Each container name should be on a separate line without any separators. <em>Default: containers.txt.</em>
 
 
-**-p** --port       Set the port on which docker-direct should be accessible. <em>Default: 1234</em>
+**-p --port   **    Set the port number for accessing Docker-direct. <em>Default: 1234</em>
 
-**-l** --log        Set the log file name and location. <em>Default: docker-direct.log</em>
+**-l --log**        Specify the log file name and location. <em>Default: docker-direct.log</em>
 
-**-h** --help       Print help
+**-h --help**       Display help information.
 
-**-v** --version    Print version
+**-v --version**    Display version information.
 
+# Assumptions:
+- Operating system: Linux
+- Containers managed by Docker-direct must be pre-built. Start them using `docker run` or `docker compose`.
 
-# assumption
-You are using linux.
-The containers that can be managed using docker-direct have to be built. So first start the containers using docker run or docker compose. 
+## Check Docker service:
+Ensure Docker service is running:
 
-Check docker service:
-sudo systemctl status docker
+`sudo systemctl status docker`
 
-Check docker daemon socket: 
-curl --unix-socket /var/run/docker.sock  http://localhost/_ping; echo
+## Check docker daemon socket: 
+Verify Docker daemon connectivity:
+
+`curl --unix-socket /var/run/docker.sock  http://localhost/_ping; echo`
 
 
 # API
-If you want to automate something using docker-direct, the API endpoints to start/stop containers are:
-http://<ip>:<port>/containers/start?name=<name>
-http://<ip>:<port>/containers/stop?name=<name>
+To automate Docker container operations using Docker-direct, use the following API endpoints:
+- Start container: `http://ip:port/containers/start?name=name`
+- Stop container: `http://ip:port/containers/stop?name=name`
 
-## basic security
-A check is done for each API request to see if the container that is being started/stopped is on the allow-list.
-
+## Basic security
+Each API request in Docker-direct checks if the container being started or stopped is on the allow-list.
