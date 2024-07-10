@@ -14,16 +14,21 @@ Access Docker-direct via ip:port/containers in your web browser.
 
 ### Options:
 
-**-a --allowed**   Specify the file containing the list of allowed containers. Each container name should be on a separate line without any separators. <em>Default: containers.txt.</em>
+**-a --allowed**   
+Specify the file containing the list of allowed containers. Each container name should be on a separate line without any separators. <em>Default: containers.txt.</em>
 
 
-**-p --port   **    Set the port number for accessing Docker-direct. <em>Default: 1234</em>
+**-p --port**    
+Set the port number for accessing Docker-direct. <em>Default: 1234</em>
 
-**-l --log**        Specify the log file name and location. <em>Default: docker-direct.log</em>
+**-l --log**        
+Specify the log file name and location. <em>Default: docker-direct.log</em>
 
-**-h --help**       Display help information.
+**-h --help**       
+Display help information.
 
-**-v --version**    Display version information.
+**-v --version**    
+Display version information.
 
 # Assumptions:
 - Operating system: Linux
