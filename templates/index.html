@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Containers</title>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            background: linear-gradient(135deg, #000080, #008080);
+            background-size: cover;
+            color: rgb(255, 0, 204);
+        }
+
+        h1 {
+            text-align: center;
+            color: #ff00cc;
+            margin-top: 20px;
+        }
+
+        ul {
+            list-style-type: none;
+            padding: 0;
+            max-width: 1080px;
+            margin: 20px auto;
+            background-color: rgba(0, 0, 0, 0.7);
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        li {
+            background-color: #000033;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(255, 0, 255, 0.5);
+            transition: transform 0.2s ease-in-out;
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+        }
+
+        .name-state {
+            flex: 1;
+            text-align: left;
+            color: #ff00cc;
+        }
+
+        .extra-btn {
+            margin: 5px;
+            cursor: pointer;
+            color: rgb(51, 51, 51);
+            border: 1px solid rgb(150, 148, 148);
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .button-column {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-left: 10px;
+        }
+
+        .start-btn {
+            background-color: rgb(10, 239, 255);
+            color: rgb(0, 0, 0);
+            border: 1px solid rgb(150, 148, 148);
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .stop-btn {
+            background-color: rgb(0, 0, 0);
+            color: rgb(10, 239, 255);
+            border: 1px solid rgb(150, 148, 148);
+            padding: 8px 16px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .start-btn.show,
+        .stop-btn.show {
+            display: inline-block;
+        }
+
+        .start-btn:hover,
+        .stop-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+
+        .healthy {
+            background-color: rgb(46, 255, 5)
+        }
+
+        .starting {
+            background-color: rgb(255, 248, 0)
+        }
+
+        .unhealthy {
+            background-color: rgb(255, 146, 0)
+        }
+
+        .exited {
+            background-color: rgb(255, 27, 0);
+            color: rgb(255, 255, 255);
+        }
+
+        .control-buttons {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .control-buttons button {
+            margin: 5px;
+            background-color: rgb(0, 0, 128);
+            color: rgb(255, 0, 204);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-buttons button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Containers</h1>
+
+
+
+    <ul id="container-list">
+        <!-- Container list dynamically populated here -->
+    </ul>
+
+    <div class="control-buttons">
+        <button onclick="startAllContainers()">Start All</button>
+        <button onclick="stopAllContainers()">Stop All</button>
+    </div>
+
+    <script>
+        // Pass the port value from Rust to JavaScript
+        const port = {{ port }};
+        const containerList = document.getElementById('container-list');
+
+        async function fetchContainerStatuses() {
+            try {
+                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
+                const containers = await response.json();
+                updateContainerList(containers);
+            } catch (error) {
+                console.error('Error fetching container statuses:', error);
+            }
+        }
+
+        function updateContainerList(containers) {
+            containerList.innerHTML = '';
+
+            containers.forEach(container => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                    <div class="name-state">${container.name} - ${container.state}</div>
+                    <div class="button-column">
+                        <button class="extra-btn ${getStatusClass(container.status)}" data-status="${container.status}">${container.status}</button>
+                    </div>
+                    <div class="button-column">
+                        <button class="start-btn" onclick="startContainer('${container.name}')">Start</button>
+                        <button class="stop-btn" onclick="stopContainer('${container.name}')">Stop</button>
+                    </div>
+                `;
+                containerList.appendChild(listItem);
+
+                const status = container.status.toLowerCase();
+                if (status.includes('healthy')) {
+                    listItem.querySelector('.stop-btn').classList.add('show');
+                } else if (status.includes('exited')) {
+                    listItem.querySelector('.start-btn').classList.add('show');
+                }
+            });
+        }
+
+        function getStatusClass(status) {
+            status = status.toLowerCase();
+            if (status.includes('healthy')) {
+                return 'healthy';
+            } else if (status.includes('starting')) {
+                return 'starting';
+            } else if (status.includes('exited')) {
+                return 'exited';
+            } else if (status.includes('unhealthy')) {
+                return 'unhealthy';
+            } else {
+                return '';
+            }
+        }
+
+        async function startContainer(containerName) {
+            const cleanedContainerName = containerName.replace(/^\//, '');
+            await fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
+            fetchContainerStatuses();
+        }
+
+        async function stopContainer(containerName) {
+            const cleanedContainerName = containerName.replace(/^\//, '');
+            await fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
+            fetchContainerStatuses();
+        }
+
+        async function startAllContainers() {
+            try {
+                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
+                const containers = await response.json();
+
+                await Promise.all(containers.map(container => {
+                    const cleanedContainerName = container.name.replace(/^\//, '');
+                    return fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
+                }));
+
+                fetchContainerStatuses();
+            } catch (error) {
+                console.error('Error starting all containers:', error);
+            }
+        }
+
+        async function stopAllContainers() {
+            try {
+                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
+                const containers = await response.json();
+
+                await Promise.all(containers.map(container => {
+                    const cleanedContainerName = container.name.replace(/^\//, '');
+                    return fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
+                }));
+
+                fetchContainerStatuses();
+            } catch (error) {
+                console.error('Error stopping all containers:', error);
+            }
+        }
+
+        setInterval(fetchContainerStatuses, 1000); 
+
+        document.addEventListener('DOMContentLoaded', fetchContainerStatuses); 
+    </script>
+</body>
+
+</html>
