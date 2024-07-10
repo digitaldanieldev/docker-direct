@@ -5,8 +5,10 @@ Docker-direct is a simple tool designed for managing Docker containers based on 
 I created Docker-direct to simplify the management of Docker containers, enabling my kids to start and stop their Minecraft servers without needing complex tools like Portainer.
 
 ## Usage:
+Download the binary found in the repository under 'releases'. Create a file called containers.txt and specify the containers by name on separate lines.
+
 `docker-direct [OPTIONS]`
-`docker-direct -f listofminecraftservers -p 1235`
+`docker-direct -a listofminecraftservers -p 1235 `
 
 Run Docker-direct on your server that hosts Docker containers.
 
@@ -44,6 +46,31 @@ Verify Docker daemon connectivity:
 
 `curl --unix-socket /var/run/docker.sock  http://localhost/_ping; echo`
 
+# Rust Installation and Cargo Build Instructions
+Docker-direct is written in Rust. If you want to build it yourself, you need to have Rust and Cargo installed on your system. 
+
+##  Installing Rust and Cargo
+To install Rust and Cargo, you can use the official Rust installation script, `rustup`.
+
+Run the following command in a terminal to install Rust:
+`curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`
+
+After installation, configure your current shell to use Rust.
+`source $HOME/.cargo/env`
+
+Verify the installation by checking the version of Rust and Cargo.
+`rustc --version`
+`cargo --version`
+
+## Building Docker-direct with Cargo
+Navigate to the directory containing the Docker-direct source code.
+
+Run the following command to build the project:
+`cargo build --release`
+
+After the build process completes, the compiled binary will be located in the target/release directory. You can run Docker-direct using this binary.
+
+`./docker-direct [OPTIONS]`
 
 # API
 To automate Docker container operations using Docker-direct, use the following API endpoints:
