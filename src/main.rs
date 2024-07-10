@@ -16,11 +16,13 @@ use std::{
     collections::{HashMap, HashSet},
     convert::Infallible,
     fmt,
+    fs::File,
     fs::read_to_string,
     net::SocketAddr,
     sync::RwLock,
 };
 use tracing::{span, Level};
+use tracing_subscriber::FmtSubscriber;
 
 lazy_static! {
     static ref CLIENT: Docker = Docker::connect_with_local_defaults().unwrap();
@@ -58,10 +60,21 @@ lazy_static! {
     static ref ALLOWED_CONTAINERS: RwLock<Vec<String>> = RwLock::new(Vec::new());
 }
 
-async fn init_logging() {
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::INFO)
+async fn init_logging(log_file: &str) {
+    let log_file = File::create(log_file).expect("Failed to create log file");
+    env_logger::Builder::new()
+        .format_timestamp(None)
+        .format_module_path(false)
+        .filter(Some("docker-direct"), log::LevelFilter::Info)
         .init();
+
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(tracing::Level::INFO)
+        .with_writer(log_file)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
 }
 
 fn read_file_once(filename: &str) -> Vec<String> {
@@ -260,16 +273,24 @@ struct Args {
 
     /// Filename to read allowed containers from
     #[arg(short, long, default_value = "containers.txt")]
-    filename: String,
+    allowed: String,
+
+    /// Log file name
+    #[arg(short, long, default_value = "docker-direct.log")]
+    log: String,
 }
+
+
+
+
 
 #[tokio::main]
 async fn main() {
-    init_logging().await;
-
     let args = Args::parse();
 
-    initialize_allowed_containers(&args.filename).await;
+    init_logging(&args.log).await;
+
+    initialize_allowed_containers(&args.allowed).await;
 
     let span = span!(Level::INFO, "docker-direct");
     let _guard = span.enter();
@@ -290,5 +311,3 @@ async fn main() {
         .unwrap();
     axum::serve(listener, app).await.unwrap();
 }
-
-
