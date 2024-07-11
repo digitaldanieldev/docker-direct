@@ -5,27 +5,76 @@
     <meta charset="UTF-8">
     <title>Containers</title>
     <style>
+        /* Cyberpunk */
+        :root {
+            --theme-primary-color: rgb(0, 0, 128);
+            --theme-secondary-color: rgb(255, 0, 204);
+            --theme-background-gradient-start: rgb(0, 0, 128);
+            --theme-background-gradient-end: rgb(0, 128, 128);
+            --theme-background-list: rgba(0, 0, 0, 0.7);
+            --theme-text-color: rgb(255, 0, 204);
+            --theme-button-bg-start: rgb(10, 239, 255);
+            --theme-button-bg-stop: rgb(0, 0, 0);
+            --theme-button-text-start: rgb(0, 0, 0);
+            --theme-button-text-stop: rgb(10, 239, 255);
+            --theme-box-shadow-color: rgba(0, 0, 0, 0.1);
+            --theme-extra-btn-bg: rgb(150, 148, 148);
+            --theme-extra-btn-text: rgb(51, 51, 51);
+            --theme-list-item-bg: rgb(0, 0, 51);
+            --theme-list-item-shadow: rgba(255, 0, 255, 0.5);
+            --theme-name-state-color: rgb(255, 0, 204);
+            --theme-start-btn-shadow: rgba(0, 0, 0, 0.1);
+            --theme-health-color: rgb(0, 255, 221);
+            --theme-starting-color: rgb(255, 204, 0);
+            --theme-unhealthy-color: rgb(255, 111, 0);
+            --theme-exited-bg: rgb(255, 0, 170);
+            --theme-exited-text: rgb(255, 255, 255);
+            --theme-control-btn-hover-shadow: rgba(0, 0, 0, 0.15);
+        }
+
+        /* Kanagawa */
+        :root.theme2 {
+            --theme-primary-color: #1d2021;
+            --theme-secondary-color: #f9f5d7;
+            --theme-background-gradient-start: #1d2021;
+            --theme-background-gradient-end: #32302f;
+            --theme-background-list: rgba(40, 44, 52, 0.7);
+            --theme-text-color: #ebdbb2;
+            --theme-button-bg-start: #83a598;
+            --theme-button-bg-stop: #665c54;
+            --theme-button-text-start: #1d2021;
+            --theme-button-text-stop: #ebdbb2;
+            --theme-extra-btn-bg: #ebdbb2;
+            --theme-extra-btn-text: #1d2021;
+            --theme-list-item-bg: #3c3836;
+            --theme-list-item-shadow: rgba(211, 175, 86, 0.5);
+            --theme-name-state-color: #fe8019;
+            --theme-start-btn-shadow: rgba(40, 44, 52, 0.3);
+            --theme-health-color: #b8bb26;
+            --theme-starting-color: #fabd2f;
+            --theme-unhealthy-color: #458588;
+            --theme-exited-bg: #fb4934;
+            --theme-exited-text: #fbf1c7;
+            --theme-control-btn-hover-shadow: rgba(0, 0, 0, 0.15);
+        }
+
         html,
         body {
             height: 100%;
             margin: 0;
             padding: 0;
-        }
-
-        body {
             font-family: 'Courier New', monospace;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: flex-start;
-            background: linear-gradient(135deg, #000080, #008080);
+            background: linear-gradient(135deg, var(--theme-background-gradient-start), var(--theme-background-gradient-end));
             background-size: cover;
-            color: rgb(255, 0, 204);
+            color: var(--theme-text-color);
         }
 
         h1 {
             text-align: center;
-            color: #ff00cc;
             margin-top: 20px;
         }
 
@@ -34,17 +83,17 @@
             padding: 0;
             max-width: 1080px;
             margin: 20px auto;
-            background-color: rgba(0, 0, 0, 0.7);
+            background-color: var(--theme-background-list);
             border-radius: 10px;
             width: 100%;
         }
 
         li {
-            background-color: #000033;
+            background-color: var(--theme-list-item-bg);
             margin-bottom: 10px;
             padding: 15px;
             border-radius: 5px;
-            box-shadow: 0 2px 4px rgba(255, 0, 255, 0.5);
+            box-shadow: 0 2px 4px var(--theme-list-item-shadow);
             transition: transform 0.2s ease-in-out;
             display: flex;
             justify-content: flex-end;
@@ -54,14 +103,14 @@
         .name-state {
             flex: 1;
             text-align: left;
-            color: #ff00cc;
+            color: var(--theme-name-state-color);
         }
 
         .extra-btn {
             margin: 5px;
             cursor: pointer;
-            color: rgb(51, 51, 51);
-            border: 1px solid rgb(150, 148, 148);
+            color: var(--theme-extra-btn-text);
+            border: 1px solid var(--theme-extra-btn-bg);
             padding: 8px 16px;
             border-radius: 5px;
             font-size: 14px;
@@ -74,58 +123,55 @@
             margin-left: 10px;
         }
 
-        .start-btn {
-            background-color: rgb(10, 239, 255);
-            color: rgb(0, 0, 0);
-            border: 1px solid rgb(150, 148, 148);
+        .start-btn,
+        .stop-btn,
+        .start-btn-all,
+        .stop-btn-all {
+            background-color: var(--theme-button-bg-start);
+            color: var(--theme-button-text-start);
+            border: 1px solid var(--theme-extra-btn-bg);
             padding: 8px 16px;
             border-radius: 5px;
             font-size: 14px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--theme-start-btn-shadow);
+
+        }
+
+        .start-btn,
+        .stop-btn {
             display: none;
         }
 
-        .stop-btn {
-            background-color: rgb(0, 0, 0);
-            color: rgb(10, 239, 255);
-            border: 1px solid rgb(150, 148, 148);
-            padding: 8px 16px;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            display: none;
+        .stop-btn,
+        .stop-btn-all {
+            background-color: var(--theme-button-bg-stop);
+            color: var(--theme-button-text-stop);
         }
 
         .start-btn.show,
-        .stop-btn.show {
+        .stop-btn.show,
+        .start-btn-all.show,
+        .stop-btn-all.show {
             display: inline-block;
         }
 
-        .start-btn:hover,
-        .stop-btn:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
-        }
-
         .healthy {
-            background-color: rgb(46, 255, 5)
+            background-color: var(--theme-health-color);
         }
 
         .starting {
-            background-color: rgb(255, 248, 0)
+            background-color: var(--theme-starting-color);
         }
 
         .unhealthy {
-            background-color: rgb(255, 146, 0)
+            background-color: var(--theme-unhealthy-color);
         }
 
         .exited {
-            background-color: rgb(255, 27, 0);
-            color: rgb(255, 255, 255);
+            background-color: var(--theme-exited-bg);
+            color: var(--theme-exited-text);
         }
 
         .control-buttons {
@@ -133,22 +179,22 @@
             margin-bottom: 20px;
         }
 
-        .control-buttons button {
+        .control-buttons select {
             margin: 5px;
-            background-color: rgb(0, 0, 128);
-            color: rgb(255, 0, 204);
+            background-color: var(--theme-primary-color);
+            color: var(--theme-secondary-color);
             border: none;
             padding: 10px 20px;
             border-radius: 5px;
             font-size: 16px;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 4px 6px var(--theme-box-shadow-color);
         }
 
-        .control-buttons button:hover {
+        .control-buttons select:hover {
             transform: scale(1.05);
-            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.15);
+            box-shadow: 0 6px 10px var(--theme-control-btn-hover-shadow);
         }
     </style>
 </head>
@@ -156,19 +202,27 @@
 <body>
     <h1>Containers</h1>
 
+    <div class="control-buttons">
+        <select id="themeSelector" onchange="changeTheme(this.value)">
+            <option value="default">Cyberpunk</option>
+            <option value="theme2">Kanagawa</option>
 
+        </select>
+
+    </div>
 
     <ul id="container-list">
         <!-- Container list dynamically populated here -->
     </ul>
 
     <div class="control-buttons">
-        <button onclick="startAllContainers()">Start All</button>
-        <button onclick="stopAllContainers()">Stop All</button>
+        <button class="start-btn-all" onclick="startAllContainers()">Start All</button>
+        <button class="stop-btn-all" onclick="stopAllContainers()">Stop All</button>
     </div>
 
+
     <script>
-        // Pass the port value from Rust to JavaScript
+        // Pass values from Rust to JavaScript
         const port = {{ port }};
         const containerList = document.getElementById('container-list');
 
@@ -267,9 +321,17 @@
             }
         }
 
+        function changeTheme(themeName) {
+            const root = document.documentElement;
+            root.classList.remove('theme2');
+            if (themeName !== 'default') {
+                root.classList.add(themeName);
+            }
+        }
+
         setInterval(fetchContainerStatuses, 1000);
 
-        document.addEventListener('DOMContentLoaded', fetchContainerStatuses); 
+        document.addEventListener('DOMContentLoaded', fetchContainerStatuses);
     </script>
 </body>
 
