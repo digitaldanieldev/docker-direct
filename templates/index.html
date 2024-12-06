@@ -220,12 +220,19 @@
         <button class="stop-btn-all" onclick="stopAllContainers()">Stop All</button>
     </div>
 
-
     <script>
         // Pass values from Rust to JavaScript
         const port = {{ port }};
         const containerList = document.getElementById('container-list');
-
+    
+        async function changeTheme(themeName) {
+            const root = document.documentElement;
+            root.classList.remove('theme2');
+            if (themeName !== 'default') {
+                root.classList.add(themeName);
+            }
+        }
+    
         async function fetchContainerStatuses() {
             try {
                 const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
@@ -235,10 +242,54 @@
                 console.error('Error fetching container statuses:', error);
             }
         }
-
+    
+        async function startAllContainers() {
+            try {
+                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
+                const containers = await response.json();
+    
+                await Promise.all(containers.map(container => {
+                    const cleanedContainerName = container.name.replace(/^\//, '');
+                    return fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
+                }));
+    
+                fetchContainerStatuses();
+            } catch (error) {
+                console.error('Error starting all containers:', error);
+            }
+        }
+    
+        async function startContainer(containerName) {
+            const cleanedContainerName = containerName.replace(/^\//, '');
+            await fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
+            fetchContainerStatuses();
+        }
+    
+        async function stopAllContainers() {
+            try {
+                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
+                const containers = await response.json();
+    
+                await Promise.all(containers.map(container => {
+                    const cleanedContainerName = container.name.replace(/^\//, '');
+                    return fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
+                }));
+    
+                fetchContainerStatuses();
+            } catch (error) {
+                console.error('Error stopping all containers:', error);
+            }
+        }
+    
+        async function stopContainer(containerName) {
+            const cleanedContainerName = containerName.replace(/^\//, '');
+            await fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
+            fetchContainerStatuses();
+        }
+    
         function updateContainerList(containers) {
             containerList.innerHTML = '';
-
+    
             containers.forEach(container => {
                 const listItem = document.createElement('li');
                 listItem.innerHTML = `
@@ -252,7 +303,7 @@
                     </div>
                 `;
                 containerList.appendChild(listItem);
-
+    
                 const status = container.status.toLowerCase();
                 if (status.includes('healthy')) {
                     listItem.querySelector('.stop-btn').classList.add('show');
@@ -261,7 +312,7 @@
                 }
             });
         }
-
+    
         function getStatusClass(status) {
             status = status.toLowerCase();
             if (status.includes('healthy')) {
@@ -276,61 +327,9 @@
                 return '';
             }
         }
-
-        async function startContainer(containerName) {
-            const cleanedContainerName = containerName.replace(/^\//, '');
-            await fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
-            fetchContainerStatuses();
-        }
-
-        async function stopContainer(containerName) {
-            const cleanedContainerName = containerName.replace(/^\//, '');
-            await fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
-            fetchContainerStatuses();
-        }
-
-        async function startAllContainers() {
-            try {
-                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
-                const containers = await response.json();
-
-                await Promise.all(containers.map(container => {
-                    const cleanedContainerName = container.name.replace(/^\//, '');
-                    return fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
-                }));
-
-                fetchContainerStatuses();
-            } catch (error) {
-                console.error('Error starting all containers:', error);
-            }
-        }
-
-        async function stopAllContainers() {
-            try {
-                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
-                const containers = await response.json();
-
-                await Promise.all(containers.map(container => {
-                    const cleanedContainerName = container.name.replace(/^\//, '');
-                    return fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
-                }));
-
-                fetchContainerStatuses();
-            } catch (error) {
-                console.error('Error stopping all containers:', error);
-            }
-        }
-
-        function changeTheme(themeName) {
-            const root = document.documentElement;
-            root.classList.remove('theme2');
-            if (themeName !== 'default') {
-                root.classList.add(themeName);
-            }
-        }
-
+    
         setInterval(fetchContainerStatuses, 1000);
-
+    
         document.addEventListener('DOMContentLoaded', fetchContainerStatuses);
     </script>
 </body>

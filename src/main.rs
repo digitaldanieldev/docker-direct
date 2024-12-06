@@ -65,17 +65,6 @@ async fn get_allowed_containers() -> Vec<String> {
     allowed_containers
 }
 
-async fn get_containers_info() -> Vec<Container> {
-    let container_info = list_containers_info().await.unwrap();
-    container_info
-}
-
-async fn get_containers_info_to_html(port: u64) -> Result<Html<String>, Infallible> {
-    let containers = get_containers_info().await;
-    let template = ContainersTemplate { containers, port };
-    Ok(Html(template.render().unwrap()))
-}
-
 async fn get_container_names() -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let span = span!(Level::INFO, "get_container_names");
     let _guard = span.enter();
@@ -97,12 +86,40 @@ async fn get_container_names() -> Result<Vec<String>, Box<dyn std::error::Error>
 }
 
 async fn get_container_statuses() -> Json<Vec<Container>> {
-    let containers = list_containers_info().await.unwrap();
+    let containers = list_containers().await.unwrap();
     Json(containers)
 }
 
-async fn init_logging(log_file: &str) {
-    let log_file = File::create(log_file).expect("Failed to create log file");
+async fn get_containers_info() -> Vec<Container> {
+    let container_info = list_containers().await.unwrap();
+    container_info
+}
+
+async fn init_allowed_containers(args: &Args) {
+    let containers_from_cli = args.containers.as_ref().and_then(|json| {
+        serde_json::from_str::<Vec<String>>(json).ok()
+    });
+
+    let allowed: Vec<String> = if let Some(containers) = containers_from_cli {
+        containers
+    } else {
+        let containers_from_file = load_file_containers(args.file.as_deref().unwrap_or("containers.txt"));
+        let containers_from_system = get_container_names().await.unwrap();
+        let containers_from_system_set: HashSet<String> = containers_from_system.into_iter().collect();
+        containers_from_file
+            .into_iter()
+            .filter(|container| containers_from_system_set.contains(container))
+            .collect()
+    };
+
+    let mut allowed_containers = ALLOWED_CONTAINERS.write().unwrap();
+    *allowed_containers = allowed;
+}
+
+async fn init_logging(log_file: &Option<String>) {
+    let log_file = log_file.as_deref().unwrap_or("docker-direct.log");
+
+    let file = File::create(&log_file).expect("Failed to create log file");
     env_logger::Builder::new()
         .format_timestamp(None)
         .format_module_path(false)
@@ -111,23 +128,11 @@ async fn init_logging(log_file: &str) {
 
     let subscriber = FmtSubscriber::builder()
         .with_max_level(tracing::Level::INFO)
-        .with_writer(log_file)
+        .with_writer(file)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
-}
-
-async fn initialize_allowed_containers(filename: &str) {
-    let containers_from_file = read_file_once(filename);
-    let containers_from_system = get_container_names().await.unwrap();
-    let containers_from_system_set: HashSet<String> = containers_from_system.into_iter().collect();
-    let allowed: Vec<String> = containers_from_file
-        .into_iter()
-        .filter(|container| containers_from_system_set.contains(container))
-        .collect();
-
-    let mut allowed_containers = ALLOWED_CONTAINERS.write().unwrap();
-    *allowed_containers = allowed;
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
 }
 
 fn is_container_allowed(container_name: &str) -> bool {
@@ -135,7 +140,7 @@ fn is_container_allowed(container_name: &str) -> bool {
     allowed_containers.contains(&container_name.to_string())
 }
 
-async fn list_containers_info() -> Result<Vec<Container>, Box<dyn std::error::Error>> {
+async fn list_containers() -> Result<Vec<Container>, Box<dyn std::error::Error>> {
     let allowed_names = get_allowed_containers().await;
     let allowed_names_set: HashSet<String> = allowed_names.into_iter().collect();
 
@@ -182,7 +187,7 @@ async fn list_containers_info() -> Result<Vec<Container>, Box<dyn std::error::Er
     Ok(containers)
 }
 
-fn read_file_once(filename: &str) -> Vec<String> {
+fn load_file_containers(filename: &str) -> Vec<String> {
     let span = span!(Level::INFO, "read_file");
     let _guard = span.enter();
     tracing::info!("Checking if file exists: {}", filename);
@@ -198,6 +203,12 @@ fn read_file_once(filename: &str) -> Vec<String> {
         tracing::warn!("File does not exist: {}", filename);
         Vec::new()
     }
+}
+
+async fn render_containers_html(port: u64) -> Result<Html<String>, Infallible> {
+    let containers = get_containers_info().await;
+    let template = ContainersTemplate { containers, port };
+    Ok(Html(template.render().unwrap()))
 }
 
 #[derive(Clone, Debug, Serialize, Template)]
@@ -273,17 +284,21 @@ async fn stop_container_handle(
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Args {
-    /// Port number used for server
-    #[arg(short, long, default_value_t = 1234)]
-    port: u64,
+    /// Containers specified on the command line (JSON format)
+    #[arg(short = 'c', long, value_parser)]
+    containers: Option<String>,
 
-    /// Filename to read allowed containers from
+    /// Filename to read allowed containers from file
     #[arg(short, long, default_value = "containers.txt")]
-    allowed: String,
+    file: Option<String>,
 
     /// Log file name
     #[arg(short, long, default_value = "docker-direct.log")]
-    log: String,
+    log: Option<String>,
+
+    /// Port number used for server
+    #[arg(short, long, default_value_t = 1234)]
+    port: u64,
 }
 
 #[tokio::main]
@@ -292,17 +307,14 @@ async fn main() {
 
     init_logging(&args.log).await;
 
-    initialize_allowed_containers(&args.allowed).await;
+    init_allowed_containers(&args).await;
 
     let span = span!(Level::INFO, "docker-direct");
     let _guard = span.enter();
     tracing::info!("Starting docker-direct");
 
     let app = Router::new()
-        .route(
-            "/containers",
-            get(move || get_containers_info_to_html(args.port)),
-        )
+        .route("/containers", get(move || render_containers_html(args.port)))
         .route("/containers/start", get(start_container_handle))
         .route("/containers/stop", get(stop_container_handle))
         .route("/containers/statuses", get(get_container_statuses))
