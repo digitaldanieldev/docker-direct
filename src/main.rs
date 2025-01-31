@@ -72,7 +72,7 @@ async fn get_container_names() -> Result<Vec<String>, Box<dyn std::error::Error>
     let options = ListContainersOptions {
         all: false,
         filters: COMMON_FILTERS.clone(),
-        limit: Some(20),
+        limit: Some(200),
         size: true,
     };
     let container_list_result = CLIENT.list_containers(Some(options)).await?;
