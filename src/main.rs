@@ -1,3 +1,4 @@
+use anyhow::Result;
 use askama::Template;
 use axum::{
     extract::{ConnectInfo, Query},
@@ -10,6 +11,7 @@ use bollard::{
     Docker,
 };
 use clap::Parser;
+use color_eyre::Report;
 use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -17,11 +19,10 @@ use std::{
     convert::Infallible,
     fmt,
     fs::read_to_string,
-    fs::File,
     net::SocketAddr,
     sync::RwLock,
 };
-use tracing::{span, Level};
+use tracing::{instrument, span, Level};
 use tracing_subscriber::FmtSubscriber;
 
 lazy_static! {
@@ -60,14 +61,19 @@ lazy_static! {
     static ref ALLOWED_CONTAINERS: RwLock<Vec<String>> = RwLock::new(Vec::new());
 }
 
+#[instrument]
 async fn get_allowed_containers() -> Vec<String> {
+    let span = span!(Level::INFO, "get_allowed_containers");
+    let _guard = span.enter();
     let allowed_containers = ALLOWED_CONTAINERS.read().unwrap().clone();
+    tracing::info!("Getting allowed containers");
     allowed_containers
 }
 
+#[instrument]
 async fn get_container_names() -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let span = span!(Level::INFO, "get_container_names");
-    let _guard = span.enter();
+    let _guard: span::Entered<'_> = span.enter();
     tracing::info!("Getting container names");
     let options = ListContainersOptions {
         all: false,
@@ -82,30 +88,44 @@ async fn get_container_names() -> Result<Vec<String>, Box<dyn std::error::Error>
         .flatten()
         .map(|name| name.trim_start_matches('/').to_string())
         .collect();
+    tracing::info!("Fetched container names");
     Ok(container_names)
 }
 
-async fn get_container_statuses() -> Json<Vec<Container>> {
+async fn get_container_list_json() -> Json<Vec<Container>> {
+    let span = span!(Level::INFO, "get_container_list_json");
+    let _guard = span.enter();
     let containers = list_containers().await.unwrap();
+    tracing::info!("Container list json: {:?}", &containers);
     Json(containers)
 }
 
-async fn get_containers_info() -> Vec<Container> {
+async fn get_containers_list_vec() -> Vec<Container> {
+    let span = span!(Level::INFO, "get_containers_list_vec");
+    let _guard = span.enter();
     let container_info = list_containers().await.unwrap();
+    tracing::info!("Container list vec: {:?}", &container_info);
     container_info
 }
 
+#[instrument]
 async fn init_allowed_containers(args: &Args) {
-    let containers_from_cli = args.containers.as_ref().and_then(|json| {
-        serde_json::from_str::<Vec<String>>(json).ok()
-    });
+    let span = span!(Level::INFO, "init_allowed_containers");
+    let _guard = span.enter();
+    tracing::info!("Initializing allowed containers");
+    let containers_from_cli = args
+        .containers
+        .as_ref()
+        .and_then(|json| serde_json::from_str::<Vec<String>>(json).ok());
 
     let allowed: Vec<String> = if let Some(containers) = containers_from_cli {
         containers
     } else {
-        let containers_from_file = load_file_containers(args.file.as_deref().unwrap_or("containers.txt"));
+        let containers_from_file =
+            load_file_containers(args.file.as_deref().unwrap_or("containers.txt"));
         let containers_from_system = get_container_names().await.unwrap();
-        let containers_from_system_set: HashSet<String> = containers_from_system.into_iter().collect();
+        let containers_from_system_set: HashSet<String> =
+            containers_from_system.into_iter().collect();
         containers_from_file
             .into_iter()
             .filter(|container| containers_from_system_set.contains(container))
@@ -113,62 +133,64 @@ async fn init_allowed_containers(args: &Args) {
     };
 
     let mut allowed_containers = ALLOWED_CONTAINERS.write().unwrap();
+    tracing::info!("Updated allowed containers");
     *allowed_containers = allowed;
 }
 
-async fn init_logging(log_file: &Option<String>) {
-    let log_file = log_file.as_deref().unwrap_or("docker-direct.log");
-
-    let file = File::create(&log_file).expect("Failed to create log file");
-    env_logger::Builder::new()
-        .format_timestamp(None)
-        .format_module_path(false)
-        .filter(Some("docker-direct"), log::LevelFilter::Info)
-        .init();
-
+#[instrument]
+async fn init_logging() {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(tracing::Level::INFO)
-        .with_writer(file)
+        .with_writer(std::io::stdout)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 }
 
+#[instrument]
 fn is_container_allowed(container_name: &str) -> bool {
+    let span = span!(Level::INFO, "is_container_allowed");
+    let _guard = span.enter();
     let allowed_containers = ALLOWED_CONTAINERS.read().unwrap();
-    allowed_containers.contains(&container_name.to_string())
+    let clean_name = container_name.trim_start_matches('/');
+    tracing::info!("Checking if container is allowed");
+    allowed_containers.contains(&clean_name.to_string())
 }
 
 async fn list_containers() -> Result<Vec<Container>, Box<dyn std::error::Error>> {
+    let span = span!(Level::INFO, "list_containers");
+    let _guard = span.enter();
     let allowed_names = get_allowed_containers().await;
     let allowed_names_set: HashSet<String> = allowed_names.into_iter().collect();
 
     let options = ListContainersOptions {
         all: false,
         filters: COMMON_FILTERS.clone(),
-        limit: Some(20),
+        limit: Some(200),
         size: true,
     };
 
     let container_list_result = CLIENT.list_containers(Some(options)).await?;
+    let container_names: Vec<String> = container_list_result
+        .iter()
+        .filter_map(|container| container.names.clone())
+        .flatten()
+        .map(|name| name.trim_start_matches('/').to_string())
+        .collect();
+
+    tracing::info!("Container names from Docker: {:?}", &container_names);
     let containers: Vec<Container> = container_list_result
         .iter()
         .filter_map(|container| {
-            let name = container.names.clone().and_then(|names| {
+            let name = container.names.as_ref().and_then(|names| {
                 names
                     .first()
-                    .cloned()
                     .map(|name| name.trim_start_matches('/').to_string())
             });
-            let status = container
-                .status
-                .clone()
-                .and_then(|state| Some(state.clone()));
-            let state = container
-                .state
-                .clone()
-                .and_then(|state| Some(state.clone()));
+
+            let status = container.status.clone();
+            let state = container.state.clone();
+
             if let (Some(name), Some(status), Some(state)) = (name, status, state) {
                 if allowed_names_set.contains(&name) {
                     Some(Container {
@@ -184,29 +206,31 @@ async fn list_containers() -> Result<Vec<Container>, Box<dyn std::error::Error>>
             }
         })
         .collect();
+
     Ok(containers)
 }
 
+#[instrument]
 fn load_file_containers(filename: &str) -> Vec<String> {
-    let span = span!(Level::INFO, "read_file");
+    let span = span!(Level::INFO, "load_file_containers");
     let _guard = span.enter();
-    tracing::info!("Checking if file exists: {}", filename);
-
+    tracing::info!("Loading containers from file");
     if std::fs::metadata(filename).is_ok() {
-        tracing::info!("File exists, reading file from disk");
         read_to_string(filename)
             .unwrap()
             .lines()
             .map(|line| line.to_string())
             .collect()
     } else {
-        tracing::warn!("File does not exist: {}", filename);
+        tracing::warn!(?filename, "File does not exist");
         Vec::new()
     }
 }
 
 async fn render_containers_html(port: u64) -> Result<Html<String>, Infallible> {
-    let containers = get_containers_info().await;
+    let span = span!(Level::INFO, "render_containers_html");
+    let _guard = span.enter();
+    let containers = get_containers_list_vec().await;
     let template = ContainersTemplate { containers, port };
     Ok(Html(template.render().unwrap()))
 }
@@ -229,7 +253,7 @@ impl fmt::Display for Container {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} - {}", self.name, self.status)
     }
-} 
+}
 
 #[derive(Debug, Deserialize)]
 pub struct ContainerName {
@@ -241,19 +265,16 @@ async fn start_container_handle(
     Query(containername): Query<ContainerName>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> impl IntoResponse {
-    tracing::info!("Starting container: {:?}", containername);
-    tracing::Span::current().record("ip_address", &tracing::field::display(&addr));
-
+    let span = span!(Level::INFO, "start_container_handle");
+    let _guard = span.enter();
+    tracing::info!("Starting container:{:?}{}", containername, addr);
     if is_container_allowed(&containername.name) {
         let _ = CLIENT
             .start_container(&containername.name, None::<StartContainerOptions<String>>)
             .await;
         (axum::http::StatusCode::OK, "Container started")
     } else {
-        tracing::warn!(
-            "Attempt to start a disallowed container: {:?}",
-            containername
-        );
+        tracing::warn!(?containername, "Container not allowed");
         (axum::http::StatusCode::FORBIDDEN, "Container not allowed")
     }
 }
@@ -263,21 +284,39 @@ async fn stop_container_handle(
     Query(containername): Query<ContainerName>,
     ConnectInfo(addr): ConnectInfo<SocketAddr>,
 ) -> impl IntoResponse {
-    tracing::info!("Stopping container: {:?}", containername);
-    tracing::Span::current().record("ip_address", &tracing::field::display(&addr));
-
+    let span = span!(Level::INFO, "stop_container_handle");
+    let _guard = span.enter();
+    tracing::info!("Stopping container:{:?}{}", containername, addr);
     if is_container_allowed(&containername.name) {
         let _ = CLIENT
             .stop_container(&containername.name, None::<StopContainerOptions>)
             .await;
         (axum::http::StatusCode::OK, "Container stopped")
     } else {
-        tracing::warn!(
-            "Attempt to stop a disallowed container: {:?}",
-            containername
-        );
+        tracing::warn!(?containername, "Container not allowed");
         (axum::http::StatusCode::FORBIDDEN, "Container not allowed")
     }
+}
+
+#[tracing::instrument]
+pub fn parse_log_level(log_level: &str) -> Result<Level, anyhow::Error> {
+    match log_level.to_lowercase().as_str() {
+        "error" => Ok(Level::ERROR),
+        "warn" => Ok(Level::WARN),
+        "info" => Ok(Level::INFO),
+        "debug" => Ok(Level::DEBUG),
+        "trace" => Ok(Level::TRACE),
+        _ => Ok(Level::INFO),
+    }
+}
+
+#[tracing::instrument]
+pub fn load_logging_config(log_level: Level) -> Result<(), Report> {
+    tracing::info!("load_logging_config");
+    color_eyre::install()?;
+    let subscriber = FmtSubscriber::builder().with_max_level(log_level).finish();
+    tracing::subscriber::set_global_default(subscriber)?;
+    Ok(())
 }
 
 /// Simple container management
@@ -292,20 +331,20 @@ struct Args {
     #[arg(short, long, default_value = "containers.txt")]
     file: Option<String>,
 
-    /// Log file name
-    #[arg(short, long, default_value = "docker-direct.log")]
-    log: Option<String>,
-
     /// Port number used for server
     #[arg(short, long, default_value_t = 1234)]
     port: u64,
+
+    /// Logging level
+    #[clap(short, long, default_value = "info")]
+    log_level: String,
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let args = Args::parse();
-
-    init_logging(&args.log).await;
+    let log_level = parse_log_level(&args.log_level)?;
+    let _ = load_logging_config(log_level);
 
     init_allowed_containers(&args).await;
 
@@ -314,14 +353,18 @@ async fn main() {
     tracing::info!("Starting docker-direct");
 
     let app = Router::new()
-        .route("/containers", get(move || render_containers_html(args.port)))
+        .route(
+            "/containers",
+            get(move || render_containers_html(args.port)),
+        )
         .route("/containers/start", get(start_container_handle))
         .route("/containers/stop", get(stop_container_handle))
-        .route("/containers/statuses", get(get_container_statuses))
+        .route("/containers/statuses", get(get_container_list_json))
         .into_make_service_with_connect_info::<SocketAddr>();
 
     let listener = tokio::net::TcpListener::bind(format!("0.0.0.0:{}", args.port))
         .await
         .unwrap();
     axum::serve(listener, app).await.unwrap();
+    Ok(())
 }

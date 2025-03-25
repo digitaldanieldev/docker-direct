@@ -1,6 +1,6 @@
 # Docker-direct
 
-Docker-direct is a simple tool designed for managing Docker containers based on an allow-list. It allows users to start and stop only those containers listed in `containers.txt`.
+Docker-direct is a simple tool designed for managing Docker containers based on an allow-list. It allows users to start and stop only selected containers.
 
 ## Why?
 I created Docker-direct to simplify the management of Docker containers, enabling my kids to start and stop their Minecraft servers without needing tools like Portainer.
@@ -9,8 +9,9 @@ I created Docker-direct to simplify the management of Docker containers, enablin
 
 You can use Docker-direct with either of the following methods:
 
-1. **Specify a file:** Use the `-f` option to provide a file (default: `containers.txt`) listing allowed containers, each on a separate line.
-2. **Pass containers directly:** Use the `-c` option to specify a JSON array of container names directly on the command line.
+1. **Pass containers directly:** Use the `-c` option to specify a JSON array of container names directly on the command line.
+
+2. **Specify a file:** Use the `-f` option to provide a file (default: `containers.txt`) listing allowed containers, each on a separate line.
 
 Run Docker-direct using the following syntax:
 
@@ -18,7 +19,7 @@ Run Docker-direct using the following syntax:
 
 Example:
 
-`docker-direct -p 1234 -c '["minecraft-server"]'`
+`docker-direct -p 1234 -c '["minecraft-server-1.21-vanilla", "minecraft-server-1.16.5-modded"]' -l error`
 
 Run Docker-direct on your server that hosts Docker containers.
 
@@ -28,17 +29,17 @@ If something doesn't work as expected, check `docker-direct.log`.
 
 ### Options:
 
+**-c --containers**  
+Specify containers in JSON format directly via the command line. Example: `-c '["minecraft-server-1.21-vanilla", "minecraft-server-1.16.5-modded"]'`.
+
 **-f --file**   
 Specify the file containing the list of allowed containers. Each container name should be on a separate line without any separators. *Default: `containers.txt`.*
 
+**-l --log**        
+Specify the log level. Choose between info, debug and error. *Default: `info`.*
+
 **-p --port**    
 Set the port number for accessing Docker-direct. *Default: `1234`.*
-
-**-l --log**        
-Specify the log file name and location. *Default: `docker-direct.log`.*
-
-**-c --containers**  
-Specify containers in JSON format directly via the command line. Example: `-c '["container1", "container2"]'`.
 
 **-h --help**       
 Display help information.
@@ -90,7 +91,7 @@ After the build process completes, the compiled binary will be located in the `t
 
 `./docker-direct [OPTIONS]`
 
-## API
+## API endpoints
 To automate Docker container operations using Docker-direct, use the following API endpoints:
 
 - Start container: `http://<ip>:<port>/containers/start?name=<container_name>`
@@ -98,3 +99,21 @@ To automate Docker container operations using Docker-direct, use the following A
 
 ## Basic Security
 Each API request in Docker-direct checks if the container being started or stopped is on the allow-list.
+
+## Automated start of service using Systemd
+Create docker-direct.service in /etc/systemd/system/ and start/enable
+```
+[Unit]
+Description=docker-direct for container management
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/home/username/docker-direct -p 1234 -c '["minecraft-server-1.21-vanilla", "minecraft-server-1.16.5-modded"]' -l info
+Type=simple
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+```
