@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Containers</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docker Direct</title>
     <style>
         /* Cyberpunk */
         :root {
@@ -11,25 +12,24 @@
             --theme-secondary-color: rgb(255, 0, 204);
             --theme-background-gradient-start: rgb(0, 0, 128);
             --theme-background-gradient-end: rgb(0, 128, 128);
-            --theme-background-list: rgba(0, 0, 0, 0.7);
             --theme-text-color: rgb(255, 0, 204);
             --theme-button-bg-start: rgb(10, 239, 255);
             --theme-button-bg-stop: rgb(0, 0, 0);
             --theme-button-text-start: rgb(0, 0, 0);
             --theme-button-text-stop: rgb(10, 239, 255);
-            --theme-box-shadow-color: rgba(0, 0, 0, 0.1);
             --theme-extra-btn-bg: rgb(150, 148, 148);
-            --theme-extra-btn-text: rgb(51, 51, 51);
             --theme-list-item-bg: rgb(0, 0, 51);
-            --theme-list-item-shadow: rgba(255, 0, 255, 0.5);
+            --theme-list-item-shadow: rgba(255, 0, 255, 0.3);
             --theme-name-state-color: rgb(255, 0, 204);
-            --theme-start-btn-shadow: rgba(0, 0, 0, 0.1);
             --theme-health-color: rgb(0, 255, 221);
             --theme-starting-color: rgb(255, 204, 0);
             --theme-unhealthy-color: rgb(255, 111, 0);
             --theme-exited-bg: rgb(255, 0, 170);
             --theme-exited-text: rgb(255, 255, 255);
-            --theme-control-btn-hover-shadow: rgba(0, 0, 0, 0.15);
+            --theme-text-dim: rgba(255, 0, 204, 0.4);
+            --theme-card-border: rgba(255, 0, 204, 0.2);
+            --theme-players-active: rgb(85, 255, 85);
+            --theme-players-grey: rgba(255, 255, 255, 0.3);
         }
 
         /* Kanagawa */
@@ -38,299 +38,406 @@
             --theme-secondary-color: #f9f5d7;
             --theme-background-gradient-start: #1d2021;
             --theme-background-gradient-end: #32302f;
-            --theme-background-list: rgba(40, 44, 52, 0.7);
             --theme-text-color: #ebdbb2;
             --theme-button-bg-start: #83a598;
             --theme-button-bg-stop: #665c54;
             --theme-button-text-start: #1d2021;
             --theme-button-text-stop: #ebdbb2;
             --theme-extra-btn-bg: #ebdbb2;
-            --theme-extra-btn-text: #1d2021;
             --theme-list-item-bg: #3c3836;
-            --theme-list-item-shadow: rgba(211, 175, 86, 0.5);
+            --theme-list-item-shadow: rgba(211, 175, 86, 0.3);
             --theme-name-state-color: #fe8019;
-            --theme-start-btn-shadow: rgba(40, 44, 52, 0.3);
             --theme-health-color: #b8bb26;
             --theme-starting-color: #fabd2f;
             --theme-unhealthy-color: #458588;
             --theme-exited-bg: #fb4934;
             --theme-exited-text: #fbf1c7;
-            --theme-control-btn-hover-shadow: rgba(0, 0, 0, 0.15);
+            --theme-text-dim: rgba(235, 219, 178, 0.4);
+            --theme-card-border: rgba(254, 128, 25, 0.2);
+            --theme-players-active: #b8bb26;
+            --theme-players-grey: rgba(235, 219, 178, 0.3);
         }
 
-        html,
-        body {
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html, body {
             height: 100%;
-            margin: 0;
-            padding: 0;
             font-family: 'Courier New', monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: flex-start;
             background: linear-gradient(135deg, var(--theme-background-gradient-start), var(--theme-background-gradient-end));
-            background-size: cover;
             color: var(--theme-text-color);
         }
 
-        h1 {
-            text-align: center;
-            margin-top: 20px;
-        }
-
-        ul {
-            list-style-type: none;
-            padding: 0;
-            max-width: 1080px;
-            margin: 20px auto;
-            background-color: var(--theme-background-list);
-            border-radius: 10px;
-            width: 100%;
-        }
-
-        li {
-            background-color: var(--theme-list-item-bg);
-            margin-bottom: 10px;
-            padding: 15px;
-            border-radius: 5px;
-            box-shadow: 0 2px 4px var(--theme-list-item-shadow);
-            transition: transform 0.2s ease-in-out;
-            display: flex;
-            justify-content: flex-end;
-            align-items: center;
-        }
-
-        .name-state {
-            flex: 1;
-            text-align: left;
-            color: var(--theme-name-state-color);
-        }
-
-        .extra-btn {
-            margin: 5px;
-            cursor: pointer;
-            color: var(--theme-extra-btn-text);
-            border: 1px solid var(--theme-extra-btn-bg);
-            padding: 8px 16px;
-            border-radius: 5px;
-            font-size: 14px;
-        }
-
-        .button-column {
+        body {
             display: flex;
             flex-direction: column;
-            align-items: flex-end;
-            margin-left: 10px;
+            align-items: center;
+            padding: 20px;
         }
 
-        .start-btn,
-        .stop-btn,
-        .start-btn-all,
-        .stop-btn-all {
-            background-color: var(--theme-button-bg-start);
-            color: var(--theme-button-text-start);
-            border: 1px solid var(--theme-extra-btn-bg);
+        h1 { text-align: center; margin-bottom: 16px; }
+
+        .top-controls {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .top-controls select,
+        .top-controls button {
+            font-family: inherit;
+            background-color: var(--theme-primary-color);
+            color: var(--theme-secondary-color);
+            border: 1px solid var(--theme-card-border);
             padding: 8px 16px;
             border-radius: 5px;
             font-size: 14px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px var(--theme-start-btn-shadow);
-
         }
 
-        .start-btn,
-        .stop-btn {
-            display: none;
+        .top-controls button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
-        .stop-btn,
-        .stop-btn-all {
+        #container-list {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            max-width: 1100px;
+        }
+
+        .item {
+            background-color: var(--theme-list-item-bg);
+            border: 1px solid var(--theme-card-border);
+            border-radius: 6px;
+            padding: 8px 14px;
+            box-shadow: 0 1px 3px var(--theme-list-item-shadow);
+        }
+
+        .row-top {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .row-name {
+            flex: 1;
+            font-weight: bold;
+            font-size: 15px;
+            color: var(--theme-name-state-color);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .status-badge {
+            padding: 2px 10px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: bold;
+            text-transform: uppercase;
+            white-space: nowrap;
+            min-width: 70px;
+            text-align: center;
+        }
+
+        .status-badge.running { background-color: var(--theme-health-color); color: #000; }
+        .status-badge.healthy { background-color: var(--theme-health-color); color: #000; }
+        .status-badge.starting { background-color: var(--theme-starting-color); color: #000; }
+        .status-badge.unhealthy { background-color: var(--theme-unhealthy-color); color: #fff; }
+        .status-badge.exited { background-color: var(--theme-exited-bg); color: var(--theme-exited-text); }
+        .status-badge.created { background-color: var(--theme-starting-color); color: #000; }
+        .status-badge.paused { background-color: var(--theme-unhealthy-color); color: #fff; }
+        .status-badge.dead { background-color: var(--theme-exited-bg); color: var(--theme-exited-text); }
+
+        .player-count {
+            font-size: 13px;
+            font-weight: bold;
+            min-width: 60px;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        .player-count.active { color: var(--theme-players-active); }
+        .player-count.inactive { color: var(--theme-players-grey); }
+
+        .action-btn {
+            font-family: inherit;
+            padding: 4px 16px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid var(--theme-extra-btn-bg);
+            white-space: nowrap;
+        }
+
+        .action-btn.start {
+            background-color: var(--theme-button-bg-start);
+            color: var(--theme-button-text-start);
+        }
+
+        .action-btn.stop {
             background-color: var(--theme-button-bg-stop);
             color: var(--theme-button-text-stop);
         }
 
-        .start-btn.show,
-        .stop-btn.show,
-        .start-btn-all.show,
-        .stop-btn-all.show {
-            display: inline-block;
+        .row-details {
+            font-size: 11px;
+            color: var(--theme-text-dim);
+            margin-top: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
-        .healthy {
-            background-color: var(--theme-health-color);
+        .row-details span {
+            margin-right: 10px;
         }
 
-        .starting {
-            background-color: var(--theme-starting-color);
-        }
-
-        .unhealthy {
-            background-color: var(--theme-unhealthy-color);
-        }
-
-        .exited {
-            background-color: var(--theme-exited-bg);
-            color: var(--theme-exited-text);
-        }
-
-        .control-buttons {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-
-        .control-buttons select {
-            margin: 5px;
-            background-color: var(--theme-primary-color);
-            color: var(--theme-secondary-color);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 6px var(--theme-box-shadow-color);
-        }
-
-        .control-buttons select:hover {
-            transform: scale(1.05);
-            box-shadow: 0 6px 10px var(--theme-control-btn-hover-shadow);
+        .d-val {
+            color: var(--theme-text-color);
+            opacity: 0.7;
         }
     </style>
 </head>
 
 <body>
-    <h1>Containers</h1>
+    <h1>Docker Direct</h1>
 
-    <div class="control-buttons">
+    <div class="top-controls">
         <select id="themeSelector" onchange="changeTheme(this.value)">
             <option value="default">Cyberpunk</option>
             <option value="theme2">Kanagawa</option>
-
         </select>
-
+        <button id="stopAllBtn" onclick="stopAllContainers()">Stop All</button>
     </div>
 
-    <ul id="container-list">
-        <!-- Container list dynamically populated here -->
-    </ul>
-
-    <div class="control-buttons">
-        <button class="start-btn-all" onclick="startAllContainers()">Start All</button>
-        <button class="stop-btn-all" onclick="stopAllContainers()">Stop All</button>
-    </div>
+    <div id="container-list"></div>
 
     <script>
-        // Pass values from Rust to JavaScript
         const port = {{ port }};
-        const containerList = document.getElementById('container-list');
-    
-        async function changeTheme(themeName) {
-            const root = document.documentElement;
-            root.classList.remove('theme2');
-            if (themeName !== 'default') {
-                root.classList.add(themeName);
-            }
+        const list = document.getElementById('container-list');
+        const stopAllBtn = document.getElementById('stopAllBtn');
+        let lastEtag = '';
+        let pollTimer = null;
+
+        function changeTheme(themeName) {
+            document.documentElement.classList.remove('theme2');
+            if (themeName !== 'default') document.documentElement.classList.add(themeName);
         }
-    
-        async function fetchContainerStatuses() {
-            try {
-                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
-                const containers = await response.json();
-                updateContainerList(containers);
-            } catch (error) {
-                console.error('Error fetching container statuses:', error);
-            }
+
+        function formatBytes(b) {
+            if (!b) return '0B';
+            const u = ['B','KB','MB','GB'];
+            const i = Math.floor(Math.log(b) / Math.log(1024));
+            return (b / Math.pow(1024, i)).toFixed(1) + u[i];
         }
-    
-        async function startAllContainers() {
-            try {
-                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
-                const containers = await response.json();
-    
-                await Promise.all(containers.map(container => {
-                    const cleanedContainerName = container.name.replace(/^\//, '');
-                    return fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
-                }));
-    
-                fetchContainerStatuses();
-            } catch (error) {
-                console.error('Error starting all containers:', error);
-            }
+
+        function statusClass(c) {
+            const s = c.status;
+            if (s.includes('healthy') && !s.includes('unhealthy')) return 'healthy';
+            if (s.includes('unhealthy')) return 'unhealthy';
+            if (s.includes('starting')) return 'starting';
+            const st = c.state;
+            if (st === 'running') return 'running';
+            if (st === 'exited') return 'exited';
+            if (st === 'created') return 'created';
+            if (st === 'paused') return 'paused';
+            if (st === 'dead') return 'dead';
+            return '';
         }
-    
-        async function startContainer(containerName) {
-            const cleanedContainerName = containerName.replace(/^\//, '');
-            await fetch(`http://${window.location.hostname}:${port}/containers/start?name=${cleanedContainerName}`);
-            fetchContainerStatuses();
+
+        function statusLabel(c) {
+            const s = c.status;
+            if (s.includes('healthy') && !s.includes('unhealthy')) return 'Healthy';
+            if (s.includes('unhealthy')) return 'Unhealthy';
+            if (s.includes('starting')) return 'Starting';
+            return c.state.charAt(0).toUpperCase() + c.state.slice(1);
         }
-    
-        async function stopAllContainers() {
-            try {
-                const response = await fetch(`http://${window.location.hostname}:${port}/containers/statuses`);
-                const containers = await response.json();
-    
-                await Promise.all(containers.map(container => {
-                    const cleanedContainerName = container.name.replace(/^\//, '');
-                    return fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
-                }));
-    
-                fetchContainerStatuses();
-            } catch (error) {
-                console.error('Error stopping all containers:', error);
-            }
-        }
-    
-        async function stopContainer(containerName) {
-            const cleanedContainerName = containerName.replace(/^\//, '');
-            await fetch(`http://${window.location.hostname}:${port}/containers/stop?name=${cleanedContainerName}`);
-            fetchContainerStatuses();
-        }
-    
-        function updateContainerList(containers) {
-            containerList.innerHTML = '';
-    
-            containers.forEach(container => {
-                const listItem = document.createElement('li');
-                listItem.innerHTML = `
-                    <div class="name-state">${container.name} - ${container.state}</div>
-                    <div class="button-column">
-                        <button class="extra-btn ${getStatusClass(container.status)}" data-status="${container.status}">${container.status}</button>
-                    </div>
-                    <div class="button-column">
-                        <button class="start-btn" onclick="startContainer('${container.name}')">Start</button>
-                        <button class="stop-btn" onclick="stopContainer('${container.name}')">Stop</button>
-                    </div>
-                `;
-                containerList.appendChild(listItem);
-    
-                const status = container.status.toLowerCase();
-                if (status.includes('healthy')) {
-                    listItem.querySelector('.stop-btn').classList.add('show');
-                } else if (status.includes('exited')) {
-                    listItem.querySelector('.start-btn').classList.add('show');
-                }
+
+        function sortContainers(containers) {
+            return containers.slice().sort((a, b) => {
+                const ap = a.minecraft ? a.minecraft.player_count : 0;
+                const bp = b.minecraft ? b.minecraft.player_count : 0;
+                const ar = a.state === 'running' ? 1 : 0;
+                const br = b.state === 'running' ? 1 : 0;
+                if (ap > 0 && bp === 0) return -1;
+                if (bp > 0 && ap === 0) return 1;
+                if (ap > 0 && bp > 0) return bp - ap;
+                if (ar !== br) return br - ar;
+                return a.name.localeCompare(b.name);
             });
         }
-    
-        function getStatusClass(status) {
-            status = status.toLowerCase();
-            if (status.includes('healthy')) {
-                return 'healthy';
-            } else if (status.includes('starting')) {
-                return 'starting';
-            } else if (status.includes('exited')) {
-                return 'exited';
-            } else if (status.includes('unhealthy')) {
-                return 'unhealthy';
+
+        function buildDetails(c) {
+            const running = c.state === 'running';
+            const parts = [];
+
+            if (c.image) parts.push(`<span><span class="d-val">${c.image}</span></span>`);
+            if (running && c.uptime) parts.push(`<span>up <span class="d-val">${c.uptime}</span></span>`);
+            if (c.ports.length) {
+                const ps = c.ports.map(p => p.host_port + ':' + p.container_port + '/' + p.protocol).join(' ');
+                parts.push(`<span><span class="d-val">${ps}</span></span>`);
+            }
+            if (running) {
+                parts.push(`<span>cpu <span class="d-val">${c.cpu_percent.toFixed(1)}%</span></span>`);
+                parts.push(`<span>mem <span class="d-val">${formatBytes(c.memory_usage)}/${formatBytes(c.memory_limit)}</span></span>`);
+            }
+            if (c.minecraft) {
+                const mc = c.minecraft;
+                if (mc.seed) parts.push(`<span>seed <span class="d-val">${mc.seed}</span></span>`);
+                if (mc.mods && mc.mods.length) parts.push(`<span>mods <span class="d-val">${mc.mods.length}</span></span>`);
+                if (mc.version) parts.push(`<span>ver <span class="d-val">${mc.version}</span></span>`);
+            }
+
+            return parts.join('');
+        }
+
+        function patchItem(item, c) {
+            const running = c.state === 'running';
+            const sc = statusClass(c);
+
+            const nameEl = item.querySelector('.row-name');
+            if (nameEl.textContent !== c.name) nameEl.textContent = c.name;
+
+            const badge = item.querySelector('.status-badge');
+            const label = statusLabel(c);
+            if (badge.textContent !== label) badge.textContent = label;
+            badge.className = 'status-badge ' + sc;
+
+            const pc = item.querySelector('.player-count');
+            if (c.minecraft && running) {
+                const has = c.minecraft.player_count > 0;
+                pc.textContent = c.minecraft.player_count + '/' + c.minecraft.max_players;
+                pc.className = 'player-count ' + (has ? 'active' : 'inactive');
+                pc.style.display = '';
+            } else if (c.minecraft) {
+                pc.textContent = '';
+                pc.className = 'player-count inactive';
+                pc.style.display = '';
             } else {
-                return '';
+                pc.style.display = 'none';
+            }
+
+            const btn = item.querySelector('.action-btn');
+            btn.className = 'action-btn ' + (running ? 'stop' : 'start');
+            btn.textContent = running ? 'Stop' : 'Start';
+            btn.setAttribute('onclick', (running ? 'stopContainer' : 'startContainer') + "('" + c.name + "')");
+
+            const details = item.querySelector('.row-details');
+            details.innerHTML = buildDetails(c);
+        }
+
+        function createItem(c) {
+            const running = c.state === 'running';
+            const sc = statusClass(c);
+            const btnCls = running ? 'stop' : 'start';
+            const btnLbl = running ? 'Stop' : 'Start';
+            const btnAct = running ? 'stopContainer' : 'startContainer';
+
+            let pcHtml;
+            if (c.minecraft && running) {
+                const has = c.minecraft.player_count > 0;
+                pcHtml = `<span class="player-count ${has ? 'active' : 'inactive'}">${c.minecraft.player_count}/${c.minecraft.max_players}</span>`;
+            } else if (c.minecraft) {
+                pcHtml = `<span class="player-count inactive"></span>`;
+            } else {
+                pcHtml = `<span class="player-count" style="display:none"></span>`;
+            }
+
+            const el = document.createElement('div');
+            el.className = 'item';
+            el.dataset.name = c.name;
+            el.innerHTML =
+                `<div class="row-top">` +
+                    `<span class="row-name">${c.name}</span>` +
+                    `<span class="status-badge ${sc}">${statusLabel(c)}</span>` +
+                    pcHtml +
+                    `<button class="action-btn ${btnCls}" onclick="${btnAct}('${c.name}')">${btnLbl}</button>` +
+                `</div>` +
+                `<div class="row-details">${buildDetails(c)}</div>`;
+            return el;
+        }
+
+        function updateContainers(containers) {
+            const sorted = sortContainers(containers);
+            const existing = {};
+            list.querySelectorAll('.item').forEach(el => { existing[el.dataset.name] = el; });
+
+            const newNames = new Set(sorted.map(c => c.name));
+            for (const name in existing) {
+                if (!newNames.has(name)) existing[name].remove();
+            }
+
+            let prev = null;
+            for (const c of sorted) {
+                let el = existing[c.name];
+                if (el) {
+                    patchItem(el, c);
+                } else {
+                    el = createItem(c);
+                    list.appendChild(el);
+                }
+                if (prev && el.previousElementSibling !== prev) {
+                    prev.after(el);
+                }
+                prev = el;
             }
         }
-    
-        setInterval(fetchContainerStatuses, 1000);
-    
-        document.addEventListener('DOMContentLoaded', fetchContainerStatuses);
+
+        async function fetchContainerStatuses() {
+            try {
+                const h = {};
+                if (lastEtag) h['If-None-Match'] = lastEtag;
+                const r = await fetch('/containers/statuses', { headers: h });
+                const etag = r.headers.get('etag');
+                if (etag) lastEtag = etag;
+                if (r.status === 304) return;
+                updateContainers(await r.json());
+            } catch (e) {
+                console.error('Error fetching statuses:', e);
+            }
+        }
+
+        async function startContainer(name) {
+            await fetch(`/containers/start?name=${encodeURIComponent(name)}`);
+            fetchContainerStatuses();
+        }
+
+        async function stopContainer(name) {
+            await fetch(`/containers/stop?name=${encodeURIComponent(name)}`);
+            fetchContainerStatuses();
+        }
+
+        async function stopAllContainers() {
+            stopAllBtn.disabled = true;
+            stopAllBtn.textContent = 'Stopping...';
+            try { await fetch('/containers/stop-all'); } catch (e) {}
+            stopAllBtn.disabled = false;
+            stopAllBtn.textContent = 'Stop All';
+            fetchContainerStatuses();
+        }
+
+        function startPolling() {
+            if (pollTimer) return;
+            pollTimer = setInterval(fetchContainerStatuses, 5000);
+        }
+
+        function stopPolling() {
+            if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+        }
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) stopPolling();
+            else { fetchContainerStatuses(); startPolling(); }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchContainerStatuses();
+            startPolling();
+        });
     </script>
 </body>
 
